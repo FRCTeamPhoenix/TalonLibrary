@@ -16,6 +16,21 @@ public class SmartTalon extends CANTalon {
 	
 	public SmartTalon(int deviceNumber) {
 		super(deviceNumber);
+		
+		setToVelocity();
+	}
+	
+	public SmartTalon(int deviceNumber, boolean inverted, int initialMode)
+	{
+		super(deviceNumber);
+		m_inverted = inverted;
+		
+		if(initialMode == 0)
+			setToVelocity();
+		else if(initialMode == 1)
+			setToDistance();
+		else if(initialMode == 2)
+			setToVelocity();
 	}
 	
 	public SmartTalon(int deviceNumber, FeedbackDevice device, boolean inverted) {
@@ -67,6 +82,18 @@ public class SmartTalon extends CANTalon {
 			setSetpoint(speed);
 		else
 			setSetpoint(-speed);
+	}
+	
+	public void goVoltage(double speed)
+	{
+		changeControlMode(TalonControlMode.PercentVbus);
+		
+		configMaxOutputVoltage(12);
+		
+		if(m_inverted)
+			set(-speed);
+		else
+			set(speed);
 	}
 	
 	public void goDistance(double distance, double speed)
