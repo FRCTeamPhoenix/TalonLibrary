@@ -2,28 +2,57 @@ package org.usfirst.frc.team2342.robot.talons;
 
 import com.ctre.CANTalon;
 
+/**
+ * General wrapper class for CANTalons. Supports voltage, velocity, and position talon modes.
+ * @author cooli
+ *
+ */
 public class SmartTalon extends CANTalon {
 	
+	/*
+	 * translates between TalonControlMode enum and user mode input via:
+	 * TalonControlMode mode = user input mode + MODE_OFFSET
+	 */
+	private static final int MODE_OFFSET = 4;
+	
+	//put a minus sign in front of all setpoints,
+	//used for reversed-polarity talons and devices
 	private boolean m_inverted;
 
+	//maximum forward and reverse speeds
 	private double m_maxForwardSpeed;
 	private double m_maxReverseSpeed;
 	
+	//current setpoint
 	private double m_goal;
 	
+	/* 
+	 * current mode, offset by MODE_OFFSET
+	 * 0: VOLTAGE MODE
+	 * 1: POSITION MODE
+	 * 2: VELOCITY MODE
+	 */
+	private int m_mode;
+	
+	//PID gains for velocity and distance
 	private PIDGains m_velocityGains;
 	private PIDGains m_distanceGains;
 	
 	public SmartTalon(int deviceNumber) {
-		super(deviceNumber);
-		
-		setToVelocity();
+		this(deviceNumber, false, 0);
 	}
 	
 	public SmartTalon(int deviceNumber, boolean inverted, int initialMode)
 	{
 		super(deviceNumber);
 		m_inverted = inverted;
+		
+		m_maxForwardSpeed = 1.0;
+		m_maxReverseSpeed = 1.0;
+		
+		m_velocityGains = new PIDGains(0,0,0,0,0,0);
+		m_distanceGains = new PIDGains(0,0,0,0,0,0);
+		m_mode = initialMode + MODE_OFFSET;
 		
 		if(initialMode == 0)
 			setToVelocity();
@@ -33,6 +62,7 @@ public class SmartTalon extends CANTalon {
 			setToVelocity();
 	}
 	
+	/*
 	public SmartTalon(int deviceNumber, FeedbackDevice device, boolean inverted) {
 		super(deviceNumber);
 		
@@ -44,9 +74,9 @@ public class SmartTalon extends CANTalon {
 		m_distanceGains = new PIDGains(0,0,0,0,0,0);
 		
 		setToVelocity();
-	}
+	}*/
 	
-	public void setToVelocity()
+	private void setToVelocity()
 	{
 		setP(m_velocityGains.getP());
 		setI(m_velocityGains.getI());
@@ -56,7 +86,7 @@ public class SmartTalon extends CANTalon {
 		setVoltageRampRate(m_velocityGains.getRr());
 	}
 
-	public void setToDistance()
+	private void setToDistance()
 	{
 		setP(m_distanceGains.getP());
 		setI(m_distanceGains.getI());
@@ -66,6 +96,9 @@ public class SmartTalon extends CANTalon {
 		setVoltageRampRate(m_distanceGains.getRr());
 	}
 	
+	/*
+	 * Go at a speed using velocity gains
+	 */
 	public void goAt(double speed)
 	{
 		speed = (speed > 1) ? 1 : speed;
@@ -73,9 +106,12 @@ public class SmartTalon extends CANTalon {
 		
 		speed = (speed > 0) ? speed * m_maxForwardSpeed : speed * m_maxReverseSpeed;
 	
-		setToVelocity();
-		changeControlMode(TalonControlMode.Speed);
-		
+		if(m_mode != TalonControlMode.Speed.getValue()) {
+			setToVelocity();
+			changeControlMode(TalonControlMode.Speed);
+			m_mode = TalonControlMode.Speed.getValue();
+		}
+			
 		configMaxOutputVoltage(12);
 		
 		if(!m_inverted)
@@ -84,9 +120,18 @@ public class SmartTalon extends CANTalon {
 			setSetpoint(-speed);
 	}
 	
+	/*
+	 * Go at a specific voltage, independent of all PID gains
+	 */
 	public void goVoltage(double speed)
 	{
-		changeControlMode(TalonControlMode.PercentVbus);
+		speed = (speed > 1) ? 1 : speed;
+		speed = (speed < -1) ? -1 : speed;
+		
+		if(m_mode != TalonControlMode.PercentVbus.getValue()) {
+			changeControlMode(TalonControlMode.PercentVbus);
+			m_mode = TalonControlMode.PercentVbus.getValue();
+		}
 		
 		configMaxOutputVoltage(12);
 		
@@ -96,6 +141,9 @@ public class SmartTalon extends CANTalon {
 			set(speed);
 	}
 	
+	/*
+	 * Go a specific distance, using distance PID gains
+	 */
 	public void goDistance(double distance, double speed)
 	{
 		speed = (speed > 1) ? 1 : speed;
@@ -103,9 +151,11 @@ public class SmartTalon extends CANTalon {
 		
 		double setPoint = getPosition() + distance;
 		
-		setToDistance();
-		changeControlMode(TalonControlMode.Position);
-		
+		if(m_mode != TalonControlMode.Position.getValue()) {
+			setToDistance();
+			changeControlMode(TalonControlMode.Position);
+			m_mode = TalonControlMode.Position.getValue();
+		}
 		
 		configMaxOutputVoltage(12 * speed);
 		
@@ -115,34 +165,36 @@ public class SmartTalon extends CANTalon {
 			setSetpoint(-setPoint);
 	}
 	
-	
-	
-	public double getM_maxForwardSpeed() {
+	public double getMaxForwardSpeed() {
 		return m_maxForwardSpeed;
 	}
 
-	public void setM_maxForwardSpeed(double m_maxFowardSpeed) {
-		this.m_maxForwardSpeed = m_maxFowardSpeed;
+	public void setMaxForwardSpeed(double maxFowardSpeed) {
+		this.m_maxForwardSpeed = maxFowardSpeed;
 	}
 
-	public double getM_maxReverseSpeed() {
+	public double getMaxReverseSpeed() {
 		return m_maxReverseSpeed;
 	}
 
-	public void setM_maxReverseSpeed(double m_maxReverseSpeed) {
-		this.m_maxReverseSpeed = m_maxReverseSpeed;
+	public void setMaxReverseSpeed(double maxReverseSpeed) {
+		this.m_maxReverseSpeed = maxReverseSpeed;
 	}
 
-	public double getM_goal() {
+	public double getGoal() {
 		return m_goal;
 	}
 
-	public void setM_goal(double m_goal) {
-		this.m_goal = m_goal;
+	public void setGoal(double goal) {
+		this.m_goal = goal;
 	}
 
-	public boolean isM_inverted() {
+	public boolean isInverted() {
 		return m_inverted;
+	}
+
+	public int getMode() {
+		return m_mode - MODE_OFFSET;
 	}
 	
 	
