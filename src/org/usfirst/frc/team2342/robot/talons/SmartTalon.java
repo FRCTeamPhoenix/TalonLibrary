@@ -60,21 +60,16 @@ public class SmartTalon extends CANTalon {
 			setToDistance();
 		else if(initialMode == 2)
 			setToVelocity();
+		
+		setFeedbackDevice(FeedbackDevice.QuadEncoder);
 	}
 	
-	/*
-	public SmartTalon(int deviceNumber, FeedbackDevice device, boolean inverted) {
-		super(deviceNumber);
+	public SmartTalon(int deviceNumber, boolean inverted, int initialMode, FeedbackDevice device)
+	{
+		this(deviceNumber, inverted, initialMode);
 		
-		m_maxForwardSpeed = 1.0;
-		m_maxReverseSpeed = 1.0;
-		m_inverted = inverted;
-		
-		m_velocityGains = new PIDGains(0,0,0,0,0,0);
-		m_distanceGains = new PIDGains(0,0,0,0,0,0);
-		
-		setToVelocity();
-	}*/
+		setFeedbackDevice(device);
+	}
 	
 	private void setToVelocity()
 	{
