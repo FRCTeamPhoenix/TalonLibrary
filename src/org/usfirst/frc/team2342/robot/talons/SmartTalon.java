@@ -9,6 +9,9 @@ import com.ctre.CANTalon;
  */
 public class SmartTalon extends CANTalon {
 	
+	//Table to send talon data to
+	private static final String NETWORK_TABLE_NAME = "Talons";
+	
 	/*
 	 * translates between TalonControlMode enum and user mode input via:
 	 * TalonControlMode mode = user input mode + MODE_OFFSET
@@ -69,6 +72,30 @@ public class SmartTalon extends CANTalon {
 		this(deviceNumber, inverted, initialMode);
 		
 		setFeedbackDevice(device);
+	}
+	
+	public void writeToNetworkTable(){
+		//ingore deprecation
+		NetworkTable table = NetworkTable.getTable(NETWORK_TABLE_NAME);
+		ITable subTable = table.getSubTable(""+this.getDeviceID());
+		SmartDashboard.putString("DB/String 0", ""+table.containsSubTable(""+this.getDeviceID()));
+		subTable.putDouble("maxForwardSpeed", this.maxForwardSpeed);
+		subTable.putDouble("maxReverseSpeed",this.maxReverseSpeed);
+		subTable.putBoolean("inverted", this.inverted);
+		subTable.putInt("mode", this.mode);
+		subTable.putDouble("goal", this.goal);
+		subTable.putDouble("velocityP", this.velocityGains.getP());
+		subTable.putDouble("velocityI", this.velocityGains.getI());
+		subTable.putDouble("velocityD", this.velocityGains.getD());
+		subTable.putDouble("velocityFf", this.velocityGains.getFf());
+		subTable.putDouble("velocityRr", this.velocityGains.getRr());
+		subTable.putInt("velocityIZone", this.velocityGains.getIzone());
+		subTable.putDouble("distanceP", this.velocityGains.getP());
+		subTable.putDouble("distanceI", this.velocityGains.getI());
+		subTable.putDouble("distanceD", this.velocityGains.getD());
+		subTable.putDouble("distanceFf", this.velocityGains.getFf());
+		subTable.putDouble("distanceRr", this.velocityGains.getRr());
+		subTable.putInt("distanceIZone", this.velocityGains.getIzone());
 	}
 	
 	private void setToVelocity()
