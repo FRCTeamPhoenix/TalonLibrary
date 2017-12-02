@@ -74,28 +74,92 @@ public class SmartTalon extends CANTalon {
 		setFeedbackDevice(device);
 	}
 	
-	public void writeToNetworkTable(){
-		//ingore deprecation
+	protected SmartTalon(int deviceNumber, int mode, boolean inverted, double maxForwardSpeed, double maxReverseSpeed, PIDGains velocity, PIDGains distance, double goal){
+		super(deviceNumber);
+		this.inverted = inverted;
+		
+		this.maxForwardSpeed = 1.0;
+		this.maxReverseSpeed = 1.0;
+		
+		this.velocityGains = velocity;
+		this.distanceGains = distance;
+		this.mode = mode;
+		
+		this.goal = goal;
+		
+		int initialMode = mode - MODE_OFFSET;
+		
+		if(initialMode == 0)
+			setToVelocity();
+		else if(initialMode == 1)
+			setToDistance();
+		else if(initialMode == 2)
+			setToVelocity();
+		
+		setFeedbackDevice(FeedbackDevice.QuadEncoder);
+	}
+	
+	public static SmartTalon initTalonFromNT(int id){
+		//get vars
 		NetworkTable table = NetworkTable.getTable(NETWORK_TABLE_NAME);
-		ITable subTable = table.getSubTable(""+this.getDeviceID());
-		SmartDashboard.putString("DB/String 0", ""+table.containsSubTable(""+this.getDeviceID()));
+		ITable subTable = table.getSubTable("CANTalon["+id+"]");
+		
+		boolean inverted = subTable.getBoolean("inverted");
+		
+		double maxForwardSpeed = subTable.getDouble("maxForwardSpeed");
+		double maxReverseSpeed = subTable.getDouble("maxReverseSpeed");
+		
+		ITable distance = subTable.getSubTable("distanceGains");
+		double P = distance.getDouble("P");
+		double I = distance.getDouble("I");
+		double D = distance.getDouble("D");
+		double Ff = distance.getDouble("Ff");
+		double Rr = distance.getDouble("Rr");
+		int Izone = distance.getInt("Izone");
+		
+		PIDGains distanceGains = new PIDGains(P, I, D, Ff, Rr, Izone);
+		
+		ITable velocity = subTable.getSubTable("velocityGains");
+		double vP = velocity.getDouble("P");
+		double vI = velocity.getDouble("I");
+		double vD = velocity.getDouble("D");
+		double vFf = velocity.getDouble("Ff");
+		double vRr = velocity.getDouble("Rr");
+		int vIzone = velocity.getInt("Izone");
+		
+		PIDGains velocityGains = new PIDGains(vP, vI, vD, vFf, vRr, vIzone);
+		
+		
+		int mode = subTable.getInt("mode");
+		double goal = subTable.getDouble("goal");
+		//temporary
+		return new SmartTalon(id, mode, inverted, maxForwardSpeed, maxReverseSpeed, velocityGains, distanceGains, goal);
+	}
+	
+	public void writeToNetworkTable(){
+		NetworkTable table = NetworkTable.getTable(NETWORK_TABLE_NAME);
+		ITable subTable = table.getSubTable("CANTalon["+this.getDeviceID()+"]");
 		subTable.putDouble("maxForwardSpeed", this.maxForwardSpeed);
 		subTable.putDouble("maxReverseSpeed",this.maxReverseSpeed);
 		subTable.putBoolean("inverted", this.inverted);
 		subTable.putInt("mode", this.mode);
-		subTable.putDouble("goal", this.goal);
-		subTable.putDouble("velocityP", this.velocityGains.getP());
-		subTable.putDouble("velocityI", this.velocityGains.getI());
-		subTable.putDouble("velocityD", this.velocityGains.getD());
-		subTable.putDouble("velocityFf", this.velocityGains.getFf());
-		subTable.putDouble("velocityRr", this.velocityGains.getRr());
-		subTable.putInt("velocityIZone", this.velocityGains.getIzone());
-		subTable.putDouble("distanceP", this.velocityGains.getP());
-		subTable.putDouble("distanceI", this.velocityGains.getI());
-		subTable.putDouble("distanceD", this.velocityGains.getD());
-		subTable.putDouble("distanceFf", this.velocityGains.getFf());
-		subTable.putDouble("distanceRr", this.velocityGains.getRr());
-		subTable.putInt("distanceIZone", this.velocityGains.getIzone());
+		subTable.putDouble("goal", this.goal);		
+		
+		ITable distance = subTable.getSubTable("distanceGains");
+		distance.putDouble("P", this.distanceGains.getP());
+		distance.putDouble("I", this.distanceGains.getI());
+		distance.putDouble("D", this.distanceGains.getD());
+		distance.putDouble("Ff", this.distanceGains.getFf());
+		distance.putDouble("Rr", this.distanceGains.getRr());
+		distance.putInt("Izone", this.distanceGains.getIzone());
+		
+		ITable velocity = subTable.getSubTable("velocityGains");
+		velocity.putDouble("P", this.velocityGains.getP());
+		velocity.putDouble("I", this.velocityGains.getI());
+		velocity.putDouble("D", this.velocityGains.getD());
+		velocity.putDouble("Ff", this.velocityGains.getFf());
+		velocity.putDouble("Rr", this.velocityGains.getRr());
+		velocity.putInt("Izone", this.velocityGains.getIzone());
 	}
 	
 	private void setToVelocity()
