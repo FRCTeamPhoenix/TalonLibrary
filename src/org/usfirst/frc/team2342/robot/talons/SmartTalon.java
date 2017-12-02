@@ -17,14 +17,14 @@ public class SmartTalon extends CANTalon {
 	
 	//put a minus sign in front of all setpoints,
 	//used for reversed-polarity talons and devices
-	private boolean m_inverted;
+	private boolean inverted;
 
 	//maximum forward and reverse speeds
-	private double m_maxForwardSpeed;
-	private double m_maxReverseSpeed;
+	private double maxForwardSpeed;
+	private double maxReverseSpeed;
 	
 	//current setpoint
-	private double m_goal;
+	private double goal;
 	
 	/* 
 	 * current mode, offset by MODE_OFFSET
@@ -32,11 +32,11 @@ public class SmartTalon extends CANTalon {
 	 * 1: POSITION MODE
 	 * 2: VELOCITY MODE
 	 */
-	private int m_mode;
+	private int mode;
 	
 	//PID gains for velocity and distance
-	private PIDGains m_velocityGains;
-	private PIDGains m_distanceGains;
+	private PIDGains velocityGains;
+	private PIDGains distanceGains;
 	
 	public SmartTalon(int deviceNumber) {
 		this(deviceNumber, false, 0);
@@ -45,14 +45,14 @@ public class SmartTalon extends CANTalon {
 	public SmartTalon(int deviceNumber, boolean inverted, int initialMode)
 	{
 		super(deviceNumber);
-		m_inverted = inverted;
+		this.inverted = inverted;
 		
-		m_maxForwardSpeed = 1.0;
-		m_maxReverseSpeed = 1.0;
+		maxForwardSpeed = 1.0;
+		maxReverseSpeed = 1.0;
 		
-		m_velocityGains = new PIDGains(0,0,0,0,0,0);
-		m_distanceGains = new PIDGains(0,0,0,0,0,0);
-		m_mode = initialMode + MODE_OFFSET;
+		velocityGains = new PIDGains(0,0,0,0,0,0);
+		distanceGains = new PIDGains(0,0,0,0,0,0);
+		mode = initialMode + MODE_OFFSET;
 		
 		if(initialMode == 0)
 			setToVelocity();
@@ -73,22 +73,22 @@ public class SmartTalon extends CANTalon {
 	
 	private void setToVelocity()
 	{
-		setP(m_velocityGains.getP());
-		setI(m_velocityGains.getI());
-		setD(m_velocityGains.getD());
-		setIZone(m_velocityGains.getIzone());
-		setF(m_velocityGains.getFf());
-		setVoltageRampRate(m_velocityGains.getRr());
+		setP(velocityGains.getP());
+		setI(velocityGains.getI());
+		setD(velocityGains.getD());
+		setIZone(velocityGains.getIzone());
+		setF(velocityGains.getFf());
+		setVoltageRampRate(velocityGains.getRr());
 	}
 
 	private void setToDistance()
 	{
-		setP(m_distanceGains.getP());
-		setI(m_distanceGains.getI());
-		setD(m_distanceGains.getD());
-		setIZone(m_distanceGains.getIzone());
-		setF(m_distanceGains.getFf());
-		setVoltageRampRate(m_distanceGains.getRr());
+		setP(distanceGains.getP());
+		setI(distanceGains.getI());
+		setD(distanceGains.getD());
+		setIZone(distanceGains.getIzone());
+		setF(distanceGains.getFf());
+		setVoltageRampRate(distanceGains.getRr());
 	}
 	
 	/*
@@ -99,17 +99,17 @@ public class SmartTalon extends CANTalon {
 		speed = (speed > 1) ? 1 : speed;
 		speed = (speed < -1) ? -1 : speed;
 		
-		speed = (speed > 0) ? speed * m_maxForwardSpeed : speed * m_maxReverseSpeed;
+		speed = (speed > 0) ? speed * maxForwardSpeed : speed * maxReverseSpeed;
 	
-		if(m_mode != TalonControlMode.Speed.getValue()) {
+		if(mode != TalonControlMode.Speed.getValue()) {
 			setToVelocity();
 			changeControlMode(TalonControlMode.Speed);
-			m_mode = TalonControlMode.Speed.getValue();
+			mode = TalonControlMode.Speed.getValue();
 		}
 			
 		configMaxOutputVoltage(12);
 		
-		if(!m_inverted)
+		if(!inverted)
 			setSetpoint(speed);
 		else
 			setSetpoint(-speed);
@@ -123,14 +123,14 @@ public class SmartTalon extends CANTalon {
 		speed = (speed > 1) ? 1 : speed;
 		speed = (speed < -1) ? -1 : speed;
 		
-		if(m_mode != TalonControlMode.PercentVbus.getValue()) {
+		if(mode != TalonControlMode.PercentVbus.getValue()) {
 			changeControlMode(TalonControlMode.PercentVbus);
-			m_mode = TalonControlMode.PercentVbus.getValue();
+			mode = TalonControlMode.PercentVbus.getValue();
 		}
 		
 		configMaxOutputVoltage(12);
 		
-		if(m_inverted)
+		if(inverted)
 			set(-speed);
 		else
 			set(speed);
@@ -146,50 +146,98 @@ public class SmartTalon extends CANTalon {
 		
 		double setPoint = getPosition() + distance;
 		
-		if(m_mode != TalonControlMode.Position.getValue()) {
+		if(mode != TalonControlMode.Position.getValue()) {
 			setToDistance();
 			changeControlMode(TalonControlMode.Position);
-			m_mode = TalonControlMode.Position.getValue();
+			mode = TalonControlMode.Position.getValue();
 		}
 		
 		configMaxOutputVoltage(12 * speed);
 		
-		if(!m_inverted)
+		if(!inverted)
 			setSetpoint(setPoint);
 		else
 			setSetpoint(-setPoint);
 	}
 	
 	public double getMaxForwardSpeed() {
-		return m_maxForwardSpeed;
+		return maxForwardSpeed;
 	}
 
 	public void setMaxForwardSpeed(double maxFowardSpeed) {
-		this.m_maxForwardSpeed = maxFowardSpeed;
+		this.maxForwardSpeed = maxFowardSpeed;
 	}
 
 	public double getMaxReverseSpeed() {
-		return m_maxReverseSpeed;
+		return maxReverseSpeed;
 	}
 
 	public void setMaxReverseSpeed(double maxReverseSpeed) {
-		this.m_maxReverseSpeed = maxReverseSpeed;
+		this.maxReverseSpeed = maxReverseSpeed;
 	}
 
 	public double getGoal() {
-		return m_goal;
+		return goal;
 	}
 
 	public void setGoal(double goal) {
-		this.m_goal = goal;
+		this.goal = goal;
 	}
 
 	public boolean isInverted() {
-		return m_inverted;
+		return inverted;
 	}
 
 	public int getMode() {
-		return m_mode - MODE_OFFSET;
+		return mode - MODE_OFFSET;
+	}
+
+	public void setInverted(boolean inverted) {
+		this.inverted = inverted;
+	}
+
+	public void setMaxForwardSpeed1(double maxForwardSpeed) {
+		this.maxForwardSpeed = maxForwardSpeed;
+	}
+
+	public double getmaxReverseSpeed() {
+		return maxReverseSpeed;
+	}
+
+	public void setmaxReverseSpeed(double maxReverseSpeed) {
+		this.maxReverseSpeed = maxReverseSpeed;
+	}
+
+	public double getgoal() {
+		return goal;
+	}
+
+	public void setgoal(double goal) {
+		this.goal = goal;
+	}
+
+	public int getmode() {
+		return mode;
+	}
+
+	public void setmode(int mode) {
+		this.mode = mode;
+	}
+
+	public PIDGains getvelocityGains() {
+		return velocityGains;
+	}
+
+	public void setvelocityGains(PIDGains velocityGains) {
+		this.velocityGains = velocityGains;
+	}
+
+	public PIDGains getdistanceGains() {
+		return distanceGains;
+	}
+
+	public void setdistanceGains(PIDGains distanceGains) {
+		this.distanceGains = distanceGains;
 	}
 	
 	
